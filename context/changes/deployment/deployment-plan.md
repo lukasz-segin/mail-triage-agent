@@ -169,18 +169,26 @@ Not part of this change's verification. Kept here so the steps are documented in
 - [ ] `docker compose down -v` (human approval, since it deletes the model volume), fresh `git clone` into a temp dir, then run the exact README command and time it against the 15-minute NFR. Record the time in the README.
 - [ ] Run the README sample curl verbatim and confirm the email in Mailpit shows the right recipient and `Reply-To`.
 
-### Phase 7: CI on GitHub Actions
+### Phase 7: CI on GitHub Actions ✅
 Added after PR #2 merged with no checks, because the repo had no `.github/workflows/`. It follows `tech-stack.md`: "CI runs checks on GitHub Actions with manual promotion, since nothing is hosted." It gets number 7 so that existing references to Phase 6 stay valid.
-- [ ] New `.github/workflows/ci.yml`, triggered on `pull_request` to `main` and on `push` to `main`. `permissions: contents: read`, and `concurrency` cancels superseded runs on the same PR.
-- [ ] Job **`test`** (ubuntu-latest): `actions/checkout`, then `astral-sh/setup-uv` pinned to uv `0.13.1` (same as the Dockerfile) with its cache enabled, then:
+- [x] New `.github/workflows/ci.yml`, triggered on `pull_request` to `main` and on `push` to `main`. `permissions: contents: read`, and `concurrency` cancels superseded runs on the same PR.
+- [x] Job **`test`** (ubuntu-latest): `actions/checkout`, then `astral-sh/setup-uv` pinned to uv `0.13.1` (same as the Dockerfile) with its cache enabled, then:
   - `uv sync --locked` (Python 3.11 comes from `.python-version`)
   - `uv run ruff check`
   - `uv run ruff format --check`
   - `uv run pytest`
-- [ ] Job **`build`** (ubuntu-latest): `docker compose config -q`, then `docker compose build api`. This proves the Dockerfile and `uv.lock` still build. It doesn't run `up --wait`, because that would pull the ~2 GB model on every PR, and the faked-Ollama tests already cover the readiness logic.
-- [ ] Pin action versions to exact current releases (check the latest tags at implementation time). No secrets are needed.
-- [ ] Verify locally first: `uv sync --locked && uv run ruff check && uv run ruff format --check && uv run pytest`, then `docker compose config -q && docker compose build api`. Then open a PR and confirm that the `test` and `build` checks show up and pass.
+- [x] Job **`build`** (ubuntu-latest): `docker compose config -q`, then `docker compose build api`. This proves the Dockerfile and `uv.lock` still build. It doesn't run `up --wait`, because that would pull the ~2 GB model on every PR, and the faked-Ollama tests already cover the readiness logic.
+- [x] Pin action versions to exact current releases (check the latest tags at implementation time). No secrets are needed.
+- [x] Verify locally first: `uv sync --locked && uv run ruff check && uv run ruff format --check && uv run pytest`, then `docker compose config -q && docker compose build api`. Then open a PR and confirm that the `test` and `build` checks show up and pass.
 - [ ] Human step (optional): in GitHub branch protection for `main`, mark `test` and `build` as required checks.
+
+As built (deviations from the items above):
+- **Pinned versions** (latest releases on 2026-10-15): `actions/checkout@v7.0.1` and `astral-sh/setup-uv@v10.3.0`.
+- **`cancel-in-progress` applies to PR runs only**, so every push to `main` is checked to the end.
+- **Branch protection is left to the repo owner** (the optional human step above), so `test` and `build` are reported on PRs but don't block merging yet.
+- **Proof:**
+  - Locally: `uv sync --locked`, `ruff check` and `ruff format --check` are clean, 6/6 tests pass, `docker compose config -q` passes and `docker compose build api` builds.
+  - On GitHub, PR #4 run 38794759802: `test` passed in 9 s (CPython 3.11.17, 6 passed) and `build` passed in 15 s.
 
 ## Edge cases → support steps (go into the README Troubleshooting section)
 

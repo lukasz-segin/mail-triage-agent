@@ -6,9 +6,9 @@ Mail Triage Agent: a proof-of-concept HTTP API that reads an employee's free-tex
 
 ## Current state
 
-The Compose stack runs and becomes healthy: [docker-compose.yml](docker-compose.yml) (api, `alpine/ollama`, Mailpit) and the [Dockerfile](Dockerfile). The API ([src/mail_triage_agent/app.py](src/mail_triage_agent/app.py)) serves `/health` and the docs. [readiness.py](src/mail_triage_agent/readiness.py) pulls and warms up the model in the background and provides the `require_ready` dependency (FR-003), plus `MODEL` and `MODEL_OPTIONS`, which every model call must reuse so Ollama doesn't reload the model. Tests live in `tests/` (`uv run pytest`).
+The Compose stack runs and becomes healthy: [docker-compose.yml](docker-compose.yml) (api, `alpine/ollama`, Mailpit) and the [Dockerfile](Dockerfile). The API ([src/mail_triage_agent/app.py](src/mail_triage_agent/app.py)) serves `/health` and the docs. [readiness.py](src/mail_triage_agent/readiness.py) pulls and warms up the model in the background and provides the `require_ready` dependency (FR-003), plus `MODEL` and `MODEL_OPTIONS`, which every model call must reuse so Ollama doesn't reload the model. Tests live in `tests/` (`uv run pytest`). CI ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs ruff, pytest and the API image build on every PR and push to `main`; run the same commands locally before pushing.
 
-Still pending (next change): the triage endpoint, input validation, the LangChain agent and send-email tool, the model comparison and latency figure, and the README sample request and department table (both marked `TODO(next change)`). LangChain isn't added yet. CI isn't set up yet either; it is planned as Phase 7 of [the deployment plan](context/changes/deployment/deployment-plan.md).
+Still pending (next change): the triage endpoint, input validation, the LangChain agent and send-email tool, the model comparison and latency figure, and the README sample request and department table (both marked `TODO(next change)`). LangChain isn't added yet.
 
 ## Commands
 
