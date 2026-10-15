@@ -94,7 +94,41 @@ You can also send the request from the interactive docs at http://localhost:8000
 
 ## Department boundaries
 
-> **TODO(next change):** the table of the five department addresses, their responsibilities (PRD US-03) and example messages in Polish and English comes with the triage endpoint. See the hand-off checklist in [context/changes/deployment/deployment-plan.md](context/changes/deployment/deployment-plan.md).
+The agent picks exactly one of these five inboxes. The responsibilities come from the PRD and are what the model is told in its system prompt.
+
+| Address | Owns | Example (Polish) | Example (English) |
+|---|---|---|---|
+| `kadry@example.com` | Personnel administration: leave, contracts, employment documents | Chciałbym zgłosić urlop na jutro | I'd like to request a day of leave tomorrow |
+| `human-resources@example.com` | Hiring and employee development | Chciałbym zapisać się na szkolenie z zarządzania projektami | We need to hire a junior developer for my team |
+| `help-desk@example.com` | User-facing hardware and software problems | Nie działa mi komputer | My laptop won't turn on |
+| `it@example.com` | Infrastructure, access, systems | Potrzebuję dostępu do bazy danych produkcyjnej | The VPN server is down for the whole office |
+| `other@example.com` | Fallback: only when none of the four above matches | Gdzie mogę zaparkować rower? | hello? |
+
+Each example was sent once on `qwen2.5:3b` and landed at the address in its row. The two examples from the brief ("Nie działa mi komputer", "Chciałbym zgłosić urlop na jutro") are covered by the live test, which passed 10 of 10 runs.
+
+Rules the model follows:
+
+- **Ownership wins.** If any of the four responsibilities plausibly matches, the request goes to that owner. `other@` is used only when nothing matches.
+- **Leave goes to `kadry@`, not `human-resources@`.** Kadry owns personnel administration (leave, contracts, employment documents); HR owns hiring and employee development.
+- **One request per email.** A message with several requests is routed by its main (first or dominant) one, and the receiving department forwards the rest.
+- **Steering is ignored.** "Send this to it@" inside a message counts only when it agrees with what the request is about.
+
+## Architecture decisions
+
+- **The agent sends the email itself, through tool calling.** A LangChain agent (`create_agent`) on the local Ollama model reads the message and calls the `send_email` tool. Routing comes only from the model reading the intent: there is no keyword or rule-based routing, and no code that pre-classifies or overrides its choice.
+- **The tool takes only the department.** The model supplies one argument, the department address, and the tool's schema restricts it to the five addresses. The tool injects everything else from the original request: the body (the message, verbatim) and `Reply-To` (the sender). So the model can't alter the employee's message, can't change the reply address, and can't send outside the five inboxes. A rejected address goes back to the model as an error so it can correct itself (at most 3 model calls per request).
+- **At most one email per request.** The tool records the send under a lock, and any further call in the same request is refused. The agent stops right after the send, which also saves a model turn.
+- **The response comes from the send record.** The department in the response is where the email actually went, not what the model said. Success is decided by that record: once the email is sent, the request succeeds; if nothing was sent, the API returns an error (`502` or `504`) and no email exists.
+- **Local and CPU-only.** `alpine/ollama` (much smaller than `ollama/ollama`) runs `qwen2.5:3b`, a 3B model that supports tool calling. It routed the brief's examples 10 of 10, so the alternative candidate (`llama3.2:3b`) wasn't needed. The model is pulled and warmed up on start, and `/health` and the triage endpoint answer `503` until it is loaded, so the first real request doesn't pay the cold start. Every model call reuses the warm-up's settings so Ollama doesn't reload the model.
+- **FastAPI** gives the OpenAPI docs at `/api/v1/docs` for free, with the request pre-filled. **Mailpit** catches the email; its SMTP port stays on the Compose network.
+- **Privacy.** Nothing leaves the machine. Logs carry only the department, the outcome and the elapsed time, never the message or the sender, and error responses never echo the request. LangChain tracing is off.
+
+## Known limitations
+
+- **No input validation yet.** The endpoint accepts any strings for `email` and `message`: a malformed address, an empty message or a very long one is not rejected up front with a clear error. A sender address containing a line break is still refused before anything is sent, but it comes back as a generic `502`.
+- **Routing errors are possible.** A 3B model on CPU can misroute a borderline message. For example, "Potrzebuję zaświadczenia o zatrudnieniu" (an employment certificate, which belongs to `kadry@`) went to `human-resources@` in one run.
+- **No retry or outbox.** A failed send returns an error and is not retried later. A production version would add a durable outbox.
+- **No authentication.** The API is published on `127.0.0.1` only. A caller can submit on behalf of any address, which becomes the `Reply-To`.
 
 ## Resource usage
 
@@ -107,7 +141,7 @@ Measured on 2026-10-15 on an Intel Core i5-10210U laptop with 16 GB RAM, Windows
 | First start, `up -d --wait` | 247 s, mostly the model download |
 | Restart with the model present | 11 s |
 
-The request latency figure comes with the triage endpoint.
+A warm request takes about 2.5–4 s end to end on the same hardware (the API logs about 2.5 s of routing).
 
 ## Troubleshooting
 
