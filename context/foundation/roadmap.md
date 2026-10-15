@@ -41,13 +41,15 @@ An employee with a request doesn't know which of five overlapping department inb
 | ---- | ----------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------- | --------------------------------------------------------------------- | -------- |
 | S-01 | first-routed-request          | [#6](https://github.com/lukasz-segin/mail-triage-agent/issues/6) | employee can submit a request and it arrives, unaltered, at the owning department     | —             | US-01, US-03 (leave example), FR-001, FR-003, FR-004, FR-005, FR-006, FR-007, FR-011, FR-012 | done |
 | S-03 | input-validation              | [#8](https://github.com/lukasz-segin/mail-triage-agent/issues/8) | caller gets a clear error for bad input, and no email is sent                         | S-01          | US-04, FR-002                                                         | proposed |
-| S-04 | reviewer-handoff              | [#9](https://github.com/lukasz-segin/mail-triage-agent/issues/9) | reviewer can check any routing result against the README's boundary table and notes   | S-01, S-03    | FR-009, FR-010                                                        | proposed |
+| S-04 | reviewer-handoff              | [#9](https://github.com/lukasz-segin/mail-triage-agent/issues/9) | reviewer can check any routing result against the README's boundary table and notes   | S-01, S-03    | FR-009, FR-010                                                        | done |
 | S-02 | boundary-and-fallback-routing | [#7](https://github.com/lukasz-segin/mail-triage-agent/issues/7) | employee's boundary and unclear requests route per the stated rules, in PL and EN    | S-01          | US-02, US-03, FR-004, FR-011                                          | proposed |
-| S-05 | submission-rehearsal          | [#10](https://github.com/lukasz-segin/mail-triage-agent/issues/10) | reviewer can go from a fresh clone to a verified request in under 15 minutes          | S-02, S-04    | FR-008, NFR (< 15 min)                                                | proposed |
+| S-05 | submission-rehearsal          | [#10](https://github.com/lukasz-segin/mail-triage-agent/issues/10) | reviewer can go from a fresh clone to a verified request in under 15 minutes          | S-02, S-04    | FR-008, NFR (< 15 min)                                                | done |
 
 ### Sequence
 
-Work order: **S-01 → S-03 → S-04 → S-02 → S-05** (deadline 2026-10-16 08:30). Prerequisites are hard dependencies; the sequence is priority. The must-have validation and docs land before S-02's open-ended model tuning, so they exist even if tuning runs long. S-02 still depends only on S-01, and S-05 runs last because its figures depend on the final model.
+Work order: **S-01 → S-03 → S-04 → S-02 → S-05** (deadline 2026-10-16 08:30).
+
+Actual order before the deadline: **S-01 → S-04 → S-05**. S-04 moved ahead of S-03 because it closes the brief's last README requirement (architecture notes); the README lists missing input validation under "Known limitations" instead of documenting validation errors. S-05 ran on S-01's model (`qwen2.5:3b`) because S-02 was skipped: both brief examples pass 10 of 10, and "hello?" lands at `other@`. S-03 and S-02 stay open, so M-1 stays open. Prerequisites are hard dependencies; the sequence is priority. The must-have validation and docs land before S-02's open-ended model tuning, so they exist even if tuning runs long. S-02 still depends only on S-01, and S-05 runs last because its figures depend on the final model.
 
 ### Issue convention
 
@@ -115,7 +117,7 @@ None. The baseline already provides the Compose stack, the readiness gate and CI
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Low: static content from the PRD, independent of the model. Sequenced before S-02 so the must-have README exists even if model tuning runs long.
-- **Status:** proposed
+- **Status:** done
 
 ### S-02: Boundary and unclear requests route per the stated rules
 
@@ -142,17 +144,17 @@ None. The baseline already provides the Compose stack, the readiness gate and CI
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Last because its figures depend on the final model chosen in S-02. The rehearsal deletes the model volume (`docker compose down -v`) and needs human approval, and a first start over 15 minutes would surface only here.
-- **Status:** proposed
+- **Status:** done
 
 ## Backlog Handoff
 
 | Roadmap ID | Change ID                     | Issue | Issue title                                                                  | Ready for `/10x-plan` | Notes                                              |
 | ---------- | ----------------------------- | ----- | ---------------------------------------------------------------------------- | --------------------- | -------------------------------------------------- |
-| S-01       | first-routed-request          | #6    | S-01: Route a request to its department via the agent's send-email tool      | yes                   | Planned and plan-reviewed; next `/10x-implement`   |
+| S-01       | first-routed-request          | #6    | S-01: Route a request to its department via the agent's send-email tool      | yes                   | Done: PR #12, archived                            |
 | S-03       | input-validation              | #8    | S-03: Reject malformed email, empty or over-long messages                    | no                    | After S-01                                         |
-| S-04       | reviewer-handoff              | #9    | S-04: Complete the README: department table and architecture notes           | no                    | After S-03                                         |
+| S-04       | reviewer-handoff              | #9    | S-04: Complete the README: department table and architecture notes           | no                    | Done: PR #13 (docs only, no change folder)         |
 | S-02       | boundary-and-fallback-routing | #7    | S-02: Route boundary and unclear requests correctly; pick and time the model | no                    | After S-01; sequenced after S-04                   |
-| S-05       | submission-rehearsal          | #10   | S-05: Rehearse a clean-clone run before submission                           | no                    | After S-02 and S-04; last step before submission   |
+| S-05       | submission-rehearsal          | #10   | S-05: Rehearse a clean-clone run before submission                           | no                    | Done on S-01's model; no change folder             |
 
 ## Open Roadmap Questions
 
@@ -172,3 +174,5 @@ None. The baseline already provides the Compose stack, the readiness gate and CI
 
 ## Done
 - **S-01: user can submit `{ email, message }` and, for both examples the brief gives, see exactly one email in the mail-capture UI at the owning department: "Nie działa mi komputer" → `help-desk@example.com`, "Chciałbym zgłosić urlop na jutro" → `kadry@example.com`. The email has the message verbatim, `Reply-To` = sender, the fixed `From` and subject, and the response names the department the tool actually delivered to. The system prompt carries the full PRD boundaries from the start, and the live test passes 5 of 5 consecutive runs for each of the two examples, because a reviewer will try exactly these. Picks up the `deployment` change's hand-off items for the endpoint: the readiness gate and the shared model settings.** — Archived 2026-10-15 → `context/archive/2026-10-15-first-routed-request/`. Lesson: —.
+- **S-04: reviewer can check any routing result against the README's boundary table and notes** — Done 2026-10-16 in PR #13 (no change folder). README gained the department table (PL/EN examples, each routed once), architecture notes and known limitations; S-03 hadn't shipped, so missing validation is listed as a limitation. Lesson: —.
+- **S-05: reviewer can go from a fresh clone to a verified request in under 15 minutes** — Done 2026-10-16 (no change folder). Fresh clone of `main` with a fresh model volume: healthy after 217 s (README records 247 s), both brief examples passed the live test, the README curl worked verbatim from WSL. Ran before S-02, on `qwen2.5:3b`. Lesson: —.
