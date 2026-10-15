@@ -1,6 +1,7 @@
 # Claude Code / 10x-cli (local, re-downloadable)
 .claude/
 .10x-cli.json
+CLAUDE.local.md
 
 # Secrets & local env
 .env
@@ -42,4 +43,4 @@ pnpm-debug.log*
 Thumbs.db
 desktop.ini
 
-docs/
+documents/
