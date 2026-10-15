@@ -7,7 +7,8 @@ context_type: mvp
 tech_stack:
   language: python 3.11
   framework: fastapi
-  runtime: uvicorn on the official python image, plus ollama/ollama (CPU-only) and axllent/mailpit
+  runtime: uvicorn on the official python image, plus alpine/ollama (CPU-only) and axllent/mailpit
+updated_at: 2026-10-15
 ---
 
 ## Recommendation
@@ -75,9 +76,9 @@ Useful during implementation for comparing `qwen2.5:3b` and `llama3.2:3b` quickl
 
 ### Devil's Advocate: Weaknesses
 
-1. **Docker isn't installed on the dev machine, and the deadline is tomorrow.** On 2026-10-15, `docker` was missing from the Windows PATH and from WSL Ubuntu-22.04. Until it is installed, nothing about the compose setup can be checked end to end.
-2. **The WSL2 memory cap is 7 GB.** WSL2 gives its VM half of host RAM by default, and this 16 GB host reports 7 GB inside WSL. The Q4_K_M models are 1.9 GB (`qwen2.5:3b`) and 2.0 GB (`llama3.2:3b`) on disk, and they need more resident memory once loaded with context. Add the LangChain API and Mailpit and it should fit, but the headroom is thin. A larger context window or a second loaded model would cause OOM-kills.
-3. **The disk budget is at risk.** The PRD allows 10 GB of free disk. I couldn't confirm the official `ollama/ollama` image size (it bundles GPU runtime libraries). Unofficial rebuilds are about 3–4 GB compressed. Add the ~2 GB model and the Python image, and the budget is tight.
+1. **Docker wasn't installed on the dev machine, and the deadline is tomorrow.** On 2026-10-15, `docker` was missing from the Windows PATH and from WSL Ubuntu-22.04. **Resolved later the same day**: Docker Desktop 29.8.2 with Compose v5.6.0 is installed, and the whole stack has been brought up and verified end to end.
+2. **The Docker VM memory cap is about 8 GB.** WSL2 gives its VM half of host RAM by default. The Docker Desktop VM on this 16 GB host has 8.2 GB (7.64 GiB) and 8 CPUs. The Q4_K_M models are 1.9 GB (`qwen2.5:3b`) and 2.0 GB (`llama3.2:3b`) on disk, and they need more resident memory once loaded with context. Measured idle with `qwen2.5:3b` loaded at `num_ctx` 4096: ollama 3.91 GiB, api 45 MiB, mailpit 9 MiB, so about 4 GiB in use. It fits, but a larger context window or a second loaded model would eat the headroom.
+3. **The disk budget was at risk.** The PRD allows 10 GB of free disk. The official `ollama/ollama:0.40.4` image is 3.78 GB compressed on amd64, because it bundles GPU runtime libraries this CPU-only project never uses. **Resolved** by using `alpine/ollama:0.40.3` instead: CPU-only, ~34 MB compressed and 121 MB unpacked, published for amd64 and arm64, and the brief allows it. It runs `ollama serve` by default and ships the `ollama` binary used by the healthcheck. Measured total after the first start: about 2.8 GB (images 459 MB, model volume 1.93 GB, build cache 355 MB).
 4. **The Ollama image has no curl and no health endpoint.** A curl-based healthcheck stays unhealthy forever. A one-shot model-pull container combined with `docker compose up --wait` has been reported to return exit 1 even when the one-shot exits 0 (Compose v2.34.0). That would make the README's "wait until ready" command report failure on a working stack.
 5. **Port 11434 collides with native Ollama.** Native Ollama is installed on this host and listens on 11434. Publishing the containerized Ollama on the same host port either fails to bind or quietly sends tests to the wrong server.
 
@@ -117,13 +118,14 @@ There's no hosted environment, so "operations" means one developer machine and e
 
 | Risk | Source | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| Docker not installed on dev machine; deadline 2026-10-16 | Devil's advocate | H | H | Install Docker first (Engine in WSL Ubuntu-22.04 via Docker's apt repo with `docker-compose-plugin`, or Docker Desktop with the WSL2 backend). Confirm `docker compose version` reports v2 before writing any compose code. |
-| WSL2 VM capped at 7 GB; model plus API OOM-killed | Devil's advocate | M | H | Measure with `docker stats` while a request runs. If it's tight, raise `memory=` in `.wslconfig` (human step). Keep Ollama's context window at the default and load one model only. |
-| Images plus model exceed the 10 GB disk NFR | Devil's advocate | M | M | Use `python:3.11-slim` (still the official image). Run `docker system df` after the first full start and record the figure in the README. |
+| Docker not installed on dev machine; deadline 2026-10-16 | Devil's advocate | — | — | **Closed 2026-10-15**: Docker Desktop 29.8.2, Compose v5.6.0. `hello-world` and the full stack run. |
+| Docker VM capped at 8.2 GB (7.64 GiB); model plus API OOM-killed | Devil's advocate | L | H | Idle with the model loaded uses about 4 GiB. Measure again with `docker stats` while a request runs. If it's tight, raise `memory=` in `.wslconfig` (human step). Keep `num_ctx` at 4096 and load one model only (`OLLAMA_MAX_LOADED_MODELS=1`). |
+| Images plus model exceed the 10 GB disk NFR | Devil's advocate | L | M | Use `python:3.11-slim` (still the official image) and `alpine/ollama` instead of the 3.78 GB official Ollama image. Measured about 2.8 GB in total, recorded in the README. |
 | Ollama healthcheck fails (no curl, no `/api/health`) | Devil's advocate | H | M | Use `ollama list` as the Ollama healthcheck command. Use Python `urllib` (not curl) in the API healthcheck, because slim images lack curl. |
 | `up --wait` exits 1 because of a one-shot init container | Devil's advocate / Unknown unknowns | M | H | Use no one-shot services. The API pulls and warms up the model at startup over Ollama's HTTP API, and its `/health` healthcheck is what `--wait` gates on. |
 | Host port 11434 conflicts with native Ollama | Devil's advocate | H | M | Don't publish Ollama's port. The API reaches it at `http://ollama:11434` on the Compose network. Publish only 8000 (API) and 8025 (Mailpit UI). |
-| Model unloaded after idle; request exceeds 30 s while `/health` says ready | Pre-mortem / Unknown unknowns | H | H | Set `OLLAMA_KEEP_ALIVE=-1` on the Ollama service. Measure latency again after 10 minutes idle before recording the README figure. |
+| Model unloaded after idle; request exceeds 30 s while `/health` says ready | Pre-mortem / Unknown unknowns | H | H | Set `OLLAMA_KEEP_ALIVE=-1` on the Ollama service. Measure latency again after 10 minutes idle before recording the README figure. (Verified: the model was still loaded after 11 minutes idle.) |
+| The agent calls the model with different load-time options (e.g. another `num_ctx`) than the warm-up, so Ollama reloads the model and the first real request pays the cold start while `/health` says ready | Deployment change | M | H | All model calls reuse `MODEL` and `MODEL_OPTIONS` from `src/mail_triage_agent/readiness.py`. Check that `ollama ps` still shows `CONTEXT 4096` after the first triage request. |
 | Latency measured on WSL2 doesn't hold on a reviewer's Apple-silicon machine | Unknown unknowns | M | M | Record the CPU, RAM and OS next to the measured figure in the README, and state it as "measured on". Check that all three images publish arm64. |
 | README "wait until ready" command never run on a clean machine | Pre-mortem | M | H | Before submission: `docker compose down -v`, then a fresh `git clone`, then the exact README command, timed against the 15-minute NFR. |
 | CRLF line endings break container scripts | Unknown unknowns | L | M | Already mitigated by `.gitattributes` (`* text=auto eol=lf`). |
@@ -131,12 +133,12 @@ There's no hosted environment, so "operations" means one developer machine and e
 
 ## Getting Started
 
-1. **Install Docker** (human step). Either install Docker Engine inside WSL Ubuntu-22.04 from Docker's official apt repository (`docker-ce`, `docker-ce-cli`, `containerd.io`, `docker-compose-plugin`), or install Docker Desktop with the WSL2 backend. Then confirm:
+1. **Install Docker** (human step, done on the dev machine: Docker Desktop 29.8.2, Compose v5.6.0). Either install Docker Engine inside WSL Ubuntu-22.04 from Docker's official apt repository (`docker-ce`, `docker-ce-cli`, `containerd.io`, `docker-compose-plugin`), or install Docker Desktop with the WSL2 backend. Then confirm:
    - `docker compose version` reports Compose v2.
    - `docker run --rm hello-world` succeeds.
 2. **Write `docker-compose.yml` with three services:**
    - `api`: built from the official `python:3.11-slim` image with uv. Publish `8000`. It depends on `ollama` and `mailpit` with `condition: service_healthy`. Its healthcheck calls `/health` through Python `urllib`.
-   - `ollama`: `ollama/ollama` with a named volume at `/root/.ollama` and `OLLAMA_KEEP_ALIVE=-1`. No published port. Healthcheck `["CMD", "ollama", "list"]`.
+   - `ollama`: `alpine/ollama` (CPU-only, see weakness 3) with a named volume at `/root/.ollama` and `OLLAMA_KEEP_ALIVE=-1`. No published port. Healthcheck `["CMD", "ollama", "list"]`.
    - `mailpit`: pin a tag of `axllent/mailpit`. Publish `8025` only; SMTP `1025` stays internal. The built-in `/mailpit readyz` healthcheck covers it.
 3. **Make readiness real.** On startup the API pulls the chosen model over Ollama's HTTP API and runs one warm-up generation. `/health` returns ready only after both succeed, and requests before that get an explicit "not ready" response (FR-003).
 4. **Start and verify:**

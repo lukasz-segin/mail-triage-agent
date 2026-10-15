@@ -6,7 +6,9 @@ Mail Triage Agent: a proof-of-concept HTTP API that reads an employee's free-tex
 
 ## Current state
 
-Only the `uv init` scaffold exists: [src/mail_triage_agent/__init__.py](src/mail_triage_agent/__init__.py) has a placeholder `main()`, with FastAPI and uvicorn installed but not wired up. There are no tests, no `docker-compose.yml` and no CI yet. LangChain, Ollama and Mailpit are planned but not added.
+The Compose stack runs and becomes healthy: [docker-compose.yml](docker-compose.yml) (api, `alpine/ollama`, Mailpit) and the [Dockerfile](Dockerfile). The API ([src/mail_triage_agent/app.py](src/mail_triage_agent/app.py)) serves `/health` and the docs. [readiness.py](src/mail_triage_agent/readiness.py) pulls and warms up the model in the background and provides the `require_ready` dependency (FR-003), plus `MODEL` and `MODEL_OPTIONS`, which every model call must reuse so Ollama doesn't reload the model. Tests live in `tests/` (`uv run pytest`).
+
+Still pending (next change): the triage endpoint, input validation, the LangChain agent and send-email tool, the model comparison and latency figure, the README sample request and department table (both marked `TODO(next change)`), and CI. LangChain isn't added yet.
 
 ## Commands
 
@@ -18,7 +20,7 @@ Lint and format with ruff (dev dependency, default rules): `uv run ruff check` a
 
 ## Target architecture (from the PRD and tech-stack hand-off)
 
-- **Compose**: one `docker-compose.yml` with three services: the API (official `python` image), `ollama/ollama` (CPU-only) and `axllent/mailpit` as the email-capture server. `docker compose up -d` must pull and warm up the model. The API's `/health` healthcheck reports ready only after warm-up, and requests before that get an explicit "not ready" response (FR-003).
+- **Compose**: one `docker-compose.yml` with three services: the API (official `python` image), `alpine/ollama` (CPU-only; the official image is 3.78 GB) and `axllent/mailpit` as the email-capture server. `docker compose up -d` must pull and warm up the model. The API's `/health` healthcheck reports ready only after warm-up, and requests before that get an explicit "not ready" response (FR-003).
 - **Model choice**: pick the smallest tool-calling model (candidates: `qwen2.5:3b`, `llama3.2:3b`) that routes every PRD US-01 to US-03 acceptance example to the correct department and answers in under 30 s per request on CPU only, once ready (PRD NFR). Record the measured figure in the README.
 - **API**: FastAPI, with interactive docs at `/api/v1/docs` (a hard requirement from the brief). One endpoint takes `{ email, message }`. It validates the email syntax and rejects empty, whitespace-only and over-2000-character messages before sending anything (FR-002).
 - **Agent**: a LangChain agent backed by Ollama decides the department. Routing must come from the model reading intent: no keyword or rule-based routing, and no code that pre-classifies or overrides the decision (FR-011).
