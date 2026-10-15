@@ -289,19 +289,19 @@ None. No data, no schema. Rollback is reverting the change; the stack and readin
 
 #### Automated
 
-- [x] 2.1 Lint and format are clean: `uv run ruff check` and `uv run ruff format --check`
-- [x] 2.2 Unit and API tests pass (live test skipped): `uv run pytest`
-- [x] 2.3 Compose config is valid and the API image builds: `docker compose config -q` and `docker compose build api`
-- [x] 2.4 Live US-01 test passes against the running stack: `docker compose up -d --build --wait --wait-timeout 900`, then `LIVE_STACK=1 uv run pytest -m live -s` (PowerShell: `$env:LIVE_STACK=1; uv run pytest -m live -s`)
-- [x] 2.5 README is still valid UTF-8: `uv run python -c "open('README.md', encoding='utf-8').read()"`
-- [x] 2.11 Live US-01 test passes 5 of 5 consecutive runs (`LIVE_RUNS=5`); on any failure apply the in-change fix path and re-run
-- [x] 2.13 Live test passes 5 of 5 consecutive runs for the leave example too ("Chciałbym zgłosić urlop na jutro" → `kadry@example.com`); on any failure apply the in-change fix path and re-run
+- [x] 2.1 Lint and format are clean: `uv run ruff check` and `uv run ruff format --check` — 8e27382
+- [x] 2.2 Unit and API tests pass (live test skipped): `uv run pytest` — 8e27382
+- [x] 2.3 Compose config is valid and the API image builds: `docker compose config -q` and `docker compose build api` — 8e27382
+- [x] 2.4 Live US-01 test passes against the running stack: `docker compose up -d --build --wait --wait-timeout 900`, then `LIVE_STACK=1 uv run pytest -m live -s` (PowerShell: `$env:LIVE_STACK=1; uv run pytest -m live -s`) — 8e27382
+- [x] 2.5 README is still valid UTF-8: `uv run python -c "open('README.md', encoding='utf-8').read()"` — 8e27382
+- [x] 2.11 Live US-01 test passes 5 of 5 consecutive runs (`LIVE_RUNS=5`); on any failure apply the in-change fix path and re-run — 8e27382
+- [x] 2.13 Live test passes 5 of 5 consecutive runs for the leave example too ("Chciałbym zgłosić urlop na jutro" → `kadry@example.com`); on any failure apply the in-change fix path and re-run — 8e27382
 
 #### Manual
 
-- [x] 2.6 The README sample curl, pasted verbatim, returns `{"department":"help-desk@example.com"}`, and Mailpit shows one new email with the right To, `Reply-To`, From, subject and unaltered body
-- [x] 2.7 `/api/v1/docs` shows `POST /api/v1/triage` pre-filled with the US-01 example and "Try it out" succeeds
-- [x] 2.8 `docker compose logs api` after a request shows the department and elapsed time, and neither the message text nor the sender address
-- [x] 2.9 The elapsed time of a warm US-01 request is noted (input for S-02's latency figure)
-- [x] 2.10 The README Windows PowerShell variant, pasted verbatim into Windows PowerShell 5.1, returns the same response, and the Mailpit body shows "Nie działa mi komputer" with the "ł" intact
-- [x] 2.12 `/api/v1/docs` shows example values for both the request and the response
+- [x] 2.6 The README sample curl, pasted verbatim, returns `{"department":"help-desk@example.com"}`, and Mailpit shows one new email with the right To, `Reply-To`, From, subject and unaltered body — 8e27382
+- [x] 2.7 `/api/v1/docs` shows `POST /api/v1/triage` pre-filled with the US-01 example and "Try it out" succeeds — 8e27382
+- [x] 2.8 `docker compose logs api` after a request shows the department and elapsed time, and neither the message text nor the sender address — 8e27382
+- [x] 2.9 The elapsed time of a warm US-01 request is noted (input for S-02's latency figure) — 8e27382
+- [x] 2.10 The README Windows PowerShell variant, pasted verbatim into Windows PowerShell 5.1, returns the same response, and the Mailpit body shows "Nie działa mi komputer" with the "ł" intact — 8e27382
+- [x] 2.12 `/api/v1/docs` shows example values for both the request and the response — 8e27382
