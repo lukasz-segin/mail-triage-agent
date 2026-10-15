@@ -1,0 +1,12 @@
+.git
+.venv
+.claude
+.10x-cli.json
+.ruff_cache
+.pytest_cache
+__pycache__
+*.pyc
+context
+docs
+documents
+tests
