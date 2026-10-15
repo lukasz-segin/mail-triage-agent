@@ -26,6 +26,7 @@ Facts checked on 2026-10-15 that supersede parts of infrastructure.md:
 | cdn.jsdelivr.net | Swagger UI assets loaded by the **browser** at `/api/v1/docs` | none | offline browser → `/api/v1/openapi.json` still works. README note |
 | GitHub (Mailpit version check) | — | — | disabled with `MP_DISABLE_VERSION_CHECK=true` |
 | Ollama cloud | — | — | disabled with `OLLAMA_NO_CLOUD=1` |
+| GitHub Actions (Phase 7) | lint, tests and the API image build on PRs and on pushes to `main` | repo code only | a flaky runner or registry → re-run the job |
 
 Nothing at runtime sends message content or sender addresses anywhere. Ports are published on `127.0.0.1` only, so the unauthenticated API isn't reachable from the LAN.
 
@@ -168,6 +169,19 @@ Not part of this change's verification. Kept here so the steps are documented in
 - [ ] `docker compose down -v` (human approval, since it deletes the model volume), fresh `git clone` into a temp dir, then run the exact README command and time it against the 15-minute NFR. Record the time in the README.
 - [ ] Run the README sample curl verbatim and confirm the email in Mailpit shows the right recipient and `Reply-To`.
 
+### Phase 7: CI on GitHub Actions
+Added after PR #2 merged with no checks, because the repo had no `.github/workflows/`. It follows `tech-stack.md`: "CI runs checks on GitHub Actions with manual promotion, since nothing is hosted." It gets number 7 so that existing references to Phase 6 stay valid.
+- [ ] New `.github/workflows/ci.yml`, triggered on `pull_request` to `main` and on `push` to `main`. `permissions: contents: read`, and `concurrency` cancels superseded runs on the same PR.
+- [ ] Job **`test`** (ubuntu-latest): `actions/checkout`, then `astral-sh/setup-uv` pinned to uv `0.13.1` (same as the Dockerfile) with its cache enabled, then:
+  - `uv sync --locked` (Python 3.11 comes from `.python-version`)
+  - `uv run ruff check`
+  - `uv run ruff format --check`
+  - `uv run pytest`
+- [ ] Job **`build`** (ubuntu-latest): `docker compose config -q`, then `docker compose build api`. This proves the Dockerfile and `uv.lock` still build. It doesn't run `up --wait`, because that would pull the ~2 GB model on every PR, and the faked-Ollama tests already cover the readiness logic.
+- [ ] Pin action versions to exact current releases (check the latest tags at implementation time). No secrets are needed.
+- [ ] Verify locally first: `uv sync --locked && uv run ruff check && uv run ruff format --check && uv run pytest`, then `docker compose config -q && docker compose build api`. Then open a PR and confirm that the `test` and `build` checks show up and pass.
+- [ ] Human step (optional): in GitHub branch protection for `main`, mark `test` and `build` as required checks.
+
 ## Edge cases → support steps (go into the README Troubleshooting section)
 
 | Symptom | Cause | Step |
@@ -187,7 +201,7 @@ Not part of this change's verification. Kept here so the steps are documented in
 `uv run ruff check && uv run pytest`, then `docker compose up -d --build --wait --wait-timeout 900` exits 0 with all three services healthy, `/health` returns 200, `/api/v1/docs` loads, the smoke email with the correct Reply-To shows in Mailpit, the model stays loaded after 10 minutes idle, and the README figures are recorded.
 
 ## Out of scope (next change)
-The triage endpoint, input validation (FR-002), the LangChain agent and send-email tool (FR-004 to FR-007, FR-011, FR-012), the qwen2.5:3b vs llama3.2:3b measurement and latency figure, the sample curl, the boundary table, and CI.
+The triage endpoint, input validation (FR-002), the LangChain agent and send-email tool (FR-004 to FR-007, FR-011, FR-012), the qwen2.5:3b vs llama3.2:3b measurement and latency figure, the sample curl and the boundary table. (CI is Phase 7 of this plan.)
 
 ## Hand-off checklist for the next change (triage endpoint)
 
