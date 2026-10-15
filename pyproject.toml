@@ -28,3 +28,6 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.17.0",
 ]
+
+[tool.pytest.ini_options]
+markers = ["live: end-to-end tests against the running Compose stack (opt-in, LIVE_STACK=1)"]

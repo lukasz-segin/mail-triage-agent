@@ -277,31 +277,31 @@ None. No data, no schema. Rollback is reverting the change; the stack and readin
 
 #### Automated
 
-- [x] 1.1 Dependencies lock and install: `uv sync --locked`
-- [x] 1.2 Lint and format are clean: `uv run ruff check` and `uv run ruff format --check`
-- [x] 1.3 All tests pass, existing readiness tests included: `uv run pytest`
+- [x] 1.1 Dependencies lock and install: `uv sync --locked` — d5e910f
+- [x] 1.2 Lint and format are clean: `uv run ruff check` and `uv run ruff format --check` — d5e910f
+- [x] 1.3 All tests pass, existing readiness tests included: `uv run pytest` — d5e910f
 
 #### Manual
 
-- [x] 1.4 Read `SYSTEM_PROMPT` against PRD Business Logic: all four responsibilities, the fallback rule and the steering rule are present, and the code contains no keyword or rule-based routing
+- [x] 1.4 Read `SYSTEM_PROMPT` against PRD Business Logic: all four responsibilities, the fallback rule and the steering rule are present, and the code contains no keyword or rule-based routing — d5e910f
 
 ### Phase 2: Endpoint, live check and docs
 
 #### Automated
 
-- [ ] 2.1 Lint and format are clean: `uv run ruff check` and `uv run ruff format --check`
-- [ ] 2.2 Unit and API tests pass (live test skipped): `uv run pytest`
-- [ ] 2.3 Compose config is valid and the API image builds: `docker compose config -q` and `docker compose build api`
-- [ ] 2.4 Live US-01 test passes against the running stack: `docker compose up -d --build --wait --wait-timeout 900`, then `LIVE_STACK=1 uv run pytest -m live -s` (PowerShell: `$env:LIVE_STACK=1; uv run pytest -m live -s`)
-- [ ] 2.5 README is still valid UTF-8: `uv run python -c "open('README.md', encoding='utf-8').read()"`
-- [ ] 2.11 Live US-01 test passes 5 of 5 consecutive runs (`LIVE_RUNS=5`); on any failure apply the in-change fix path and re-run
-- [ ] 2.13 Live test passes 5 of 5 consecutive runs for the leave example too ("Chciałbym zgłosić urlop na jutro" → `kadry@example.com`); on any failure apply the in-change fix path and re-run
+- [x] 2.1 Lint and format are clean: `uv run ruff check` and `uv run ruff format --check`
+- [x] 2.2 Unit and API tests pass (live test skipped): `uv run pytest`
+- [x] 2.3 Compose config is valid and the API image builds: `docker compose config -q` and `docker compose build api`
+- [x] 2.4 Live US-01 test passes against the running stack: `docker compose up -d --build --wait --wait-timeout 900`, then `LIVE_STACK=1 uv run pytest -m live -s` (PowerShell: `$env:LIVE_STACK=1; uv run pytest -m live -s`)
+- [x] 2.5 README is still valid UTF-8: `uv run python -c "open('README.md', encoding='utf-8').read()"`
+- [x] 2.11 Live US-01 test passes 5 of 5 consecutive runs (`LIVE_RUNS=5`); on any failure apply the in-change fix path and re-run
+- [x] 2.13 Live test passes 5 of 5 consecutive runs for the leave example too ("Chciałbym zgłosić urlop na jutro" → `kadry@example.com`); on any failure apply the in-change fix path and re-run
 
 #### Manual
 
-- [ ] 2.6 The README sample curl, pasted verbatim, returns `{"department":"help-desk@example.com"}`, and Mailpit shows one new email with the right To, `Reply-To`, From, subject and unaltered body
-- [ ] 2.7 `/api/v1/docs` shows `POST /api/v1/triage` pre-filled with the US-01 example and "Try it out" succeeds
-- [ ] 2.8 `docker compose logs api` after a request shows the department and elapsed time, and neither the message text nor the sender address
-- [ ] 2.9 The elapsed time of a warm US-01 request is noted (input for S-02's latency figure)
-- [ ] 2.10 The README Windows PowerShell variant, pasted verbatim into Windows PowerShell 5.1, returns the same response, and the Mailpit body shows "Nie działa mi komputer" with the "ł" intact
-- [ ] 2.12 `/api/v1/docs` shows example values for both the request and the response
+- [x] 2.6 The README sample curl, pasted verbatim, returns `{"department":"help-desk@example.com"}`, and Mailpit shows one new email with the right To, `Reply-To`, From, subject and unaltered body
+- [x] 2.7 `/api/v1/docs` shows `POST /api/v1/triage` pre-filled with the US-01 example and "Try it out" succeeds
+- [x] 2.8 `docker compose logs api` after a request shows the department and elapsed time, and neither the message text nor the sender address
+- [x] 2.9 The elapsed time of a warm US-01 request is noted (input for S-02's latency figure)
+- [x] 2.10 The README Windows PowerShell variant, pasted verbatim into Windows PowerShell 5.1, returns the same response, and the Mailpit body shows "Nie działa mi komputer" with the "ł" intact
+- [x] 2.12 `/api/v1/docs` shows example values for both the request and the response

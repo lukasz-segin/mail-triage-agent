@@ -3,7 +3,7 @@ change_id: first-routed-request
 title: Route a request to its department via the agent's send-email tool
 status: implementing
 created: 2026-10-15
-updated: 2026-10-15
+updated: 2026-10-16
 archived_at: null
 ---
 

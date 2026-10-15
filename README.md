@@ -47,6 +47,7 @@ Requests to the API before that get the same `503` "not ready" response.
 | What | URL |
 |---|---|
 | Interactive API docs | http://localhost:8000/api/v1/docs |
+| Triage endpoint | `POST` http://localhost:8000/api/v1/triage |
 | OpenAPI schema | http://localhost:8000/api/v1/openapi.json |
 | Readiness | http://localhost:8000/health |
 | Mailpit (caught email) | http://localhost:8025 |
@@ -62,7 +63,34 @@ docker compose down -v   # also delete the model volume; the next start re-downl
 
 ## Sample request
 
-> **TODO(next change):** the triage endpoint doesn't exist yet. The next change adds a ready-to-paste `curl` with the US-01 example, the expected response and where to see the email in Mailpit. See the hand-off checklist in [context/changes/deployment/deployment-plan.md](context/changes/deployment/deployment-plan.md).
+Once `/health` answers `200`, send the US-01 example (bash or zsh):
+
+```sh
+curl -X POST http://localhost:8000/api/v1/triage   -H "Content-Type: application/json"   -d '{"email":"jan.nowak@example.com","message":"Nie działa mi komputer"}'
+```
+
+On Windows, Git Bash passes "ł" to `curl` in the ANSI code page, so the request fails with `400`; use the PowerShell variant there.
+
+On Windows PowerShell, use `Invoke-RestMethod`. The `curl.exe` hint above applies to `/health` only: in Windows PowerShell 5.1, `curl.exe` strips the JSON's inner double quotes and sends "ł" in the wrong encoding, so this request would fail with `422`.
+
+```powershell
+$body = '{"email":"jan.nowak@example.com","message":"Nie działa mi komputer"}'
+Invoke-RestMethod -Method Post -Uri http://localhost:8000/api/v1/triage `
+  -ContentType 'application/json; charset=utf-8' `
+  -Body ([Text.Encoding]::UTF8.GetBytes($body))
+```
+
+Expected response: `200 {"department":"help-desk@example.com"}`.
+
+Open Mailpit at http://localhost:8025 to see the email. It goes to `help-desk@example.com` with `Reply-To: jan.nowak@example.com`, `From: triage-agent@example.com`, subject `[Triage] New request`, and the message unaltered as its body. Each request sends exactly one email.
+
+Errors (no email is sent in any of these cases):
+
+- `503`: the model isn't ready yet (see `/health`).
+- `502`: the model produced no department decision, or sending the email failed.
+- `504`: a single model call took more than 90 s. A request makes at most 3 model calls, so the worst case is about 3 × 90 s.
+
+You can also send the request from the interactive docs at http://localhost:8000/api/v1/docs, where `POST /api/v1/triage` comes pre-filled with this example.
 
 ## Department boundaries
 
