@@ -9,6 +9,8 @@ authors = [
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.143.1",
+    "langchain>=1.4.6",
+    "langchain-ollama>=1.1.0",
     "ollama>=0.6.3",
     "uvicorn>=0.54.0",
 ]

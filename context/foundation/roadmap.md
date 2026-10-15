@@ -39,7 +39,7 @@ An employee with a request doesn't know which of five overlapping department inb
 
 | ID   | Change ID                     | Issue                                                               | Outcome (user can …)                                                                 | Prerequisites | PRD refs                                                              | Status   |
 | ---- | ----------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------- | --------------------------------------------------------------------- | -------- |
-| S-01 | first-routed-request          | [#6](https://github.com/lukasz-segin/mail-triage-agent/issues/6) | employee can submit a request and it arrives, unaltered, at the owning department     | —             | US-01, US-03 (leave example), FR-001, FR-003, FR-004, FR-005, FR-006, FR-007, FR-011, FR-012 | planning |
+| S-01 | first-routed-request          | [#6](https://github.com/lukasz-segin/mail-triage-agent/issues/6) | employee can submit a request and it arrives, unaltered, at the owning department     | —             | US-01, US-03 (leave example), FR-001, FR-003, FR-004, FR-005, FR-006, FR-007, FR-011, FR-012 | in-progress |
 | S-03 | input-validation              | [#8](https://github.com/lukasz-segin/mail-triage-agent/issues/8) | caller gets a clear error for bad input, and no email is sent                         | S-01          | US-04, FR-002                                                         | proposed |
 | S-04 | reviewer-handoff              | [#9](https://github.com/lukasz-segin/mail-triage-agent/issues/9) | reviewer can check any routing result against the README's boundary table and notes   | S-01, S-03    | FR-009, FR-010                                                        | proposed |
 | S-02 | boundary-and-fallback-routing | [#7](https://github.com/lukasz-segin/mail-triage-agent/issues/7) | employee's boundary and unclear requests route per the stated rules, in PL and EN    | S-01          | US-02, US-03, FR-004, FR-011                                          | proposed |
@@ -89,7 +89,7 @@ None. The baseline already provides the Compose stack, the readiness gate and CI
 - **Unknowns:**
   - Does the default candidate model call the send tool reliably with only the department as its argument, and route both brief examples correctly (including kadry vs HR for the leave request)? — Owner: user. Block: **yes for S-01**: resolved inside S-01 (live test 5/5 per example; tighten the prompt, then switch to `llama3.2:3b`). S-02 still owns the final model choice across all examples.
 - **Risk:** Carries most must-have FRs because the PRD has a single workflow and FR-005/006/007/012 are guardrails of that one send, so splitting them would ship an unguarded tool. Sequenced first because every other slice tunes or documents this flow.
-- **Status:** planning
+- **Status:** in-progress
 
 ### S-03: Bad input is rejected with a clear error
 
