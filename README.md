@@ -1,5 +1,7 @@
 # mail-triage-agent
 
+[![CI](https://github.com/lukasz-segin/mail-triage-agent/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/lukasz-segin/mail-triage-agent/actions/workflows/ci.yml)
+
 Routes an employee's free-text request to the right department inbox using a local LLM agent.
 
 Everything runs on your machine in Docker Compose: the API, Ollama (CPU only, model `qwen2.5:3b`) and Mailpit, which catches the outgoing email. Message content and sender addresses never leave the local environment and are never logged.
@@ -66,7 +68,9 @@ docker compose down -v   # also delete the model volume; the next start re-downl
 Once `/health` answers `200`, send the US-01 example (bash or zsh):
 
 ```sh
-curl -X POST http://localhost:8000/api/v1/triage   -H "Content-Type: application/json"   -d '{"email":"jan.nowak@example.com","message":"Nie działa mi komputer"}'
+curl -X POST http://localhost:8000/api/v1/triage \
+  -H "Content-Type: application/json" \
+  -d '{"email":"jan.nowak@example.com","message":"Nie działa mi komputer"}'
 ```
 
 On Windows, Git Bash passes "ł" to `curl` in the ANSI code page, so the request fails with `400`; use the PowerShell variant there.
