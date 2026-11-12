@@ -1,7 +1,7 @@
 [project]
 name = "mail-triage-agent"
 version = "0.1.0"
-description = "Add your description here"
+description = "Routes an employee's free-text request to the right department inbox using a local LLM agent."
 readme = "README.md"
 authors = [
     { name = "Lukasz", email = "lukasz.segin1990@gmail.com" }
